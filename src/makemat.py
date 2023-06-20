@@ -40,7 +40,7 @@ def get_con_df(raw_mat, roi_names):
 
 
 def extract_mat(rsimg, maskimg, labelimg, conntype='correlation', space='labels', 
-                savets=False, nomat=False, dtr=False, stdz=False):
+                savets=False, nomat=False, dtr=False, stdz=False, nomask=False):
 
     masker = input_data.NiftiLabelsMasker(labelimg,
                                           background_label=0,
@@ -63,8 +63,11 @@ def extract_mat(rsimg, maskimg, labelimg, conntype='correlation', space='labels'
         resampmask = resample_to_img(maskimg,labelimg,interpolation='nearest')
         
     # mask
-    from nilearn.masking import apply_mask
-    resamplabsmasked = apply_mask(resamplabs,resampmask)
+    if not nomask:
+        from nilearn.masking import apply_mask
+        resamplabsmasked = apply_mask(resamplabs,resampmask)
+    else:
+        resamplabsmasked = resamplabs.get_fdata().flatten()
 
     # get the unique labels list, other than 0, which will be first
     #reginparc = np.unique(resamplabs.get_fdata())[1:].astype(np.int)
@@ -122,6 +125,8 @@ def main():
                         action="store_true")
     parser.add_argument('-nomatrix', help='if you dont want to compute matix (because you just want time series)',
                         action="store_true")
+    parser.add_argument('-nomask', help='if you dont want to mask the parcellation by the fmri mask',
+                        default=False)
     parser.add_argument('-parcs', help='parcs to be used for makin\' matrices. make last arg',
                         nargs='+', required=True)
 
@@ -156,7 +161,7 @@ def main():
                                                       savets=args.savetimeseries,
                                                       nomat=args.nomatrix,
                                                       dtr=args.detrend,
-                                                      stdz=args.standarize)
+                                                      stdz=args.standarize,nomask=args.nomask)
 
         # format name
         baseoutname = (os.path.basename(parc)).rsplit('.nii', 1)[0]
